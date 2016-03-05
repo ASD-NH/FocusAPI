@@ -31,9 +31,10 @@ public class Focus {
       
       try {
          
-         Connection.Response response = Jsoup.connect(Constants.FOCUS_URL.toString())
+         Connection.Response response = Jsoup.connect(Constants.FOCUS_TLD + Constants.FOCUS_LOGIN_URL)
                .data("login", "true", "data", "username=" + user + "&password=" + pass)
                .method(Method.POST)
+               .timeout(Constants.CONNECTION_TIMEOUT)
                .execute();
          
          Document login = response.parse();

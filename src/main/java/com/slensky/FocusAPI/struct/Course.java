@@ -10,14 +10,16 @@ public class Course {
    public final String name;
    public final String teacher;
    public final ArrayList<Constants.day> meetingDays;
-   public final int roomNumber;
+   public final String roomNumber;
    public final Constants.termLength termLength;
+   
+   private boolean isStudy = false;
    
    public Course(int period,
                  String name,
                  String teacher,
                  ArrayList<Constants.day> meetingDays,
-                 int roomNumber,
+                 String roomNumber,
                  Constants.termLength termLength) {
       this.period = period;
       this.name = name;
@@ -25,10 +27,18 @@ public class Course {
       this.meetingDays = meetingDays;
       this.roomNumber = roomNumber;
       this.termLength = termLength;
+      
+      if (name.toLowerCase().indexOf("study") >= 0) {
+         isStudy = true;
+      }
    }
    
    public String toString() {
       return name + " - " + "Period " + period + " - " + teacher + " - " + roomNumber;
+   }
+   
+   public boolean isStudy() {
+      return isStudy;
    }
    
 }
