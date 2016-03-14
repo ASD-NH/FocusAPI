@@ -8,36 +8,31 @@ import javax.security.auth.login.FailedLoginException;
 
 public class Test {
 
-   public static void main(String[] args) throws IOException {
+   public static void main(String[] args) {
       
       @SuppressWarnings("resource")
       Scanner scan = new Scanner(System.in);
       
+      System.out.println("Focus API v0.0.3 alpha test-only version");
+      System.out.println("Do not redistribute without express permission\n");
+      
       Focus focus = null;
       while (true) {
          System.out.print("Username: ");
-         String user = "stephan.lensky";
+         String user = scan.nextLine();
          System.out.print("Password: ");
-         String pass = "426-Summit";
+         String pass = readPassword();
          try {
+            System.out.println();
             focus = new Focus(user, pass);
             break;
          } catch(FailedLoginException e) {
             System.out.println("Login failed. Please try again");
+         } catch(IOException e) {
+            System.out.println("Connection timed out, please try again.");
          }
       }
       
-      /*long startTime;
-      
-      startTime = System.currentTimeMillis();
-      ArrayList<Course> courses = focus.getClasses();
-      System.out.println((System.currentTimeMillis() - startTime) + " ms elapsed to extract courses");
-      for (Course c : courses) {
-         //System.out.println(c);
-      }
-      
-      Extractor.extractCourseAssignments(focus.pageIndex, focus.getClasses().get(0));
-      */
    }
    
    private static String readPassword() {

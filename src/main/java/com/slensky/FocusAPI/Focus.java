@@ -28,16 +28,28 @@ public final class Focus {
    public Focus(String user, String pass) throws FailedLoginException, IOException {
       this.user = user;
       this.pass = pass;
-      long start = System.currentTimeMillis();
+      
       if (!logIn()) {
          throw new FailedLoginException();
       }
+      
+      long start = System.currentTimeMillis();
+      
+      //actually important
       currentMarkingPeriod = getMostRecentMarkingPeriod();
+      
+      Logger.log("Confirmed most recent marking period: " + currentMarkingPeriod.getMarkingPeriodId() + " (" + (System.currentTimeMillis() - start) + " ms)");
+      start = System.currentTimeMillis();
+      
+      //actually important
       changeMarkingPeriod(currentMarkingPeriod);
-      System.out.println("done (" + (System.currentTimeMillis() - start) + " ms)");
+      
+      Logger.log("Changed marking period (" + (System.currentTimeMillis() - start) + " ms)");
    }
    
    private boolean logIn() throws IOException {
+      
+      long start = System.currentTimeMillis();
       
       Connection.Response response = null;
       Document login = null;
@@ -50,7 +62,7 @@ public final class Focus {
       login = response.parse();
       
       if (login.toString().indexOf("\"success\":true") >= 0) {
-         Logger.log("Login successful");
+         Logger.log("Login successful (" + (System.currentTimeMillis() - start) + " ms)");
       }
       else {
          Logger.log("Login unsuccessful");
@@ -60,6 +72,8 @@ public final class Focus {
       phpSessId.setContent(response.cookie(Constants.PHPSESSID));
       Logger.log(phpSessId.toString());
    
+      start = System.currentTimeMillis();
+      
       String portal = null;
       portal = Jsoup.connect(Constants.FOCUS_TLD + Constants.FOCUS_PORTAL_URL)
             .cookie(phpSessId.getName(), phpSessId.getContent())
@@ -70,7 +84,9 @@ public final class Focus {
       int cookieStart = portal.indexOf("var session = ") + 14;
       int cookieEnd = portal.indexOf("Cookies.set('current_session', JSON") - 3;
       currentSession.parseJSONFields(portal.substring(cookieStart, cookieEnd));
-      Logger.log("Current Session: " + currentSession.getEncodedContent());
+      
+      //Logger.log("Current Session: " + currentSession.getEncodedContent());
+      Logger.log("Initial marking period: " + currentSession.getMarkingPeriod() + " (" + (System.currentTimeMillis() - start) + " ms)");
       
       return true;
    

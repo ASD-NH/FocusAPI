@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.slensky.FocusAPI</groupId>
   <artifactId>FocusAPI</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
+  <version>0.0.3</version>
   <name>Focus API</name>
   <dependencies>
   	<dependency>
