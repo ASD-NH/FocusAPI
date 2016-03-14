@@ -2,32 +2,42 @@ package com.slensky.FocusAPI;
 
 import java.io.Console;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Scanner;
 
-import com.slensky.FocusAPI.struct.Course;
+import javax.security.auth.login.FailedLoginException;
 
 public class Test {
 
    public static void main(String[] args) throws IOException {
       
-      Focus focus = new Focus();
-      
       @SuppressWarnings("resource")
       Scanner scan = new Scanner(System.in);
       
-      System.out.print("Username: ");
-      String user = scan.nextLine();
-      System.out.print("Password: ");
-      String pass = readPassword();
-      
-      focus.logIn(user, pass);
-      
-      ArrayList<Course> courses = focus.getClasses();
-      for (Course c : courses) {
-         System.out.println(c);
+      Focus focus = null;
+      while (true) {
+         System.out.print("Username: ");
+         String user = "stephan.lensky";
+         System.out.print("Password: ");
+         String pass = "426-Summit";
+         try {
+            focus = new Focus(user, pass);
+            break;
+         } catch(FailedLoginException e) {
+            System.out.println("Login failed. Please try again");
+         }
       }
       
+      /*long startTime;
+      
+      startTime = System.currentTimeMillis();
+      ArrayList<Course> courses = focus.getClasses();
+      System.out.println((System.currentTimeMillis() - startTime) + " ms elapsed to extract courses");
+      for (Course c : courses) {
+         //System.out.println(c);
+      }
+      
+      Extractor.extractCourseAssignments(focus.pageIndex, focus.getClasses().get(0));
+      */
    }
    
    private static String readPassword() {
