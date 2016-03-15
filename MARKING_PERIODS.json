@@ -1,0 +1,54 @@
+{
+   "Marking Periods" : [
+      {
+         "year" : 2012
+         "type" : "QUARTER_ONE"
+         "id" : 232
+      }
+      {
+      	"year" : 2012
+      	"type" : "QUARTER_TWO"
+      	"id" : 231
+      }
+      {
+      	"year" : 2012
+      	"type" : "QUARTER_THREE"
+      	"id" : 230
+      }
+      {
+      	"year" : 2012
+      	"type" : "QUARTER_FOUR"
+      	"id" : 229
+      }
+      {
+      	"year" : 2013
+      	"type" : "SEMESTER_ONE"
+      	"id" : 266
+      }
+      {
+      	"year" : 2013
+      	"type" : "SEMESTER_TWO"
+      	"id" : 263
+      }
+      {
+      	"year" : 2014
+      	"type" : "SEMESTER_ONE"
+      	"id" : 297
+      }
+      {
+      	"year" : 2014
+      	"type" : "SEMESTER_TWO"
+      	"id" : 296
+      }
+      {
+      	"year" : 2015
+      	"type" : "SEMESTER_ONE"
+      	"id" : 314
+      }
+      {
+      	"year" : 2015
+      	"type" : "SEMESTER_TWO"
+      	"id" : 315
+      }
+   ]
+}
