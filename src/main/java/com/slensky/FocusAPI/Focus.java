@@ -60,7 +60,7 @@ public final class Focus {
       }
       if (!currentMarkingPeriod.equals(getMostRecentMarkingPeriod())) {
          Logger.log("Marking period incorrect, changing...");
-         Util.setMarkingPeriod(getMostRecentMarkingPeriod(), phpSessId);
+         changeMarkingPeriod(getMostRecentMarkingPeriod());
       }
       Logger.log("Login sequence finished (" + (System.currentTimeMillis() - start) + " ms)");
    }
