@@ -2,9 +2,9 @@ package com.slensky.FocusAPI.cookie;
 
 import com.slensky.FocusAPI.util.Constants;
 
-public class PHPSessionId {
+public class PHPSessionId implements Cookie {
    
-   private final String name = Constants.PHPSESSID;
+   private final String name = "PHPSESSID";
    private String content;
    
    public void setContent(String content) {

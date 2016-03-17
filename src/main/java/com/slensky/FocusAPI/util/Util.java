@@ -1,7 +1,23 @@
 package com.slensky.FocusAPI.util;
 
+import java.io.IOException;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
+import org.jsoup.Jsoup;
+import org.jsoup.helper.HttpConnection;
+import org.jsoup.Connection;
+import org.jsoup.Connection.Method;
+import org.jsoup.nodes.Document;
+
+import com.slensky.FocusAPI.Focus.School;
+import com.slensky.FocusAPI.cookie.Cookie;
+import com.slensky.FocusAPI.cookie.CurrentSession;
+import com.slensky.FocusAPI.cookie.PHPSessionId;
+import com.slensky.FocusAPI.studentinfo.MarkingPeriod;
 import com.slensky.FocusAPI.studentinfo.MarkingPeriod.Term;
 
 public class Util {
@@ -64,6 +80,33 @@ public class Util {
       }
       
       return term;
+   }
+   
+   public static Document getDocument(String url, Cookie... cookies) throws IOException {
+      
+      Map<String, String> cookieMap = new HashMap<String, String>();
+      for (Cookie c : cookies) {
+         cookieMap.put(c.getName(), c.getContent());
+      }
+      
+      return Jsoup.connect(URLRetriever.getTLD())
+         .cookies(cookieMap)
+         .timeout(Constants.CONNECTION_TIMEOUT)
+         .get();
+      
+   }
+   public static void setMarkingPeriod(MarkingPeriod markingPeriod, PHPSessionId sessId) throws IOException {
+      Collection<Connection.KeyVal> formData = new HashSet<org.jsoup.Connection.KeyVal>();
+      formData.add(HttpConnection.KeyVal.create("side_syear", Integer.toString(markingPeriod.getYear())));
+      formData.add(HttpConnection.KeyVal.create("side_mp", Integer.toString(markingPeriod.getMarkingPeriodId())));
+      
+      //submit request to change years
+      Jsoup.connect(URLRetriever.getTLD())
+            .cookie(sessId.getName(), sessId.getContent())
+            .data(formData)
+            .method(Method.POST)
+            .timeout(Constants.CONNECTION_TIMEOUT)
+            .execute();
    }
    
 }

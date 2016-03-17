@@ -1,50 +1,68 @@
 package com.slensky.FocusAPI;
 
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.util.*;
+import java.io.InputStreamReader;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLConnection;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 import javax.security.auth.login.FailedLoginException;
 
+import org.apache.commons.io.IOUtils;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.jsoup.Connection;
 import org.jsoup.Connection.Method;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
 
-import com.slensky.FocusAPI.cookie.*;
-import com.slensky.FocusAPI.studentinfo.*;
-import com.slensky.FocusAPI.studentinfo.MarkingPeriod.Term;
-import com.slensky.FocusAPI.util.*;
+import com.slensky.FocusAPI.cookie.CurrentSession;
+import com.slensky.FocusAPI.cookie.PHPSessionId;
+import com.slensky.FocusAPI.studentinfo.Course;
+import com.slensky.FocusAPI.studentinfo.CourseAssignments;
+import com.slensky.FocusAPI.studentinfo.FinalExam;
+import com.slensky.FocusAPI.studentinfo.FinalGrade;
+import com.slensky.FocusAPI.studentinfo.GraduationRequirement;
+import com.slensky.FocusAPI.studentinfo.MarkingPeriod;
+import com.slensky.FocusAPI.studentinfo.SchoolEvent;
+import com.slensky.FocusAPI.studentinfo.StudentInformation;
+import com.slensky.FocusAPI.util.Constants;
+import com.slensky.FocusAPI.util.Logger;
+import com.slensky.FocusAPI.util.URLRetriever;
+import com.slensky.FocusAPI.util.Util;
 
 public final class Focus {
    
+   public enum School {
+      ASD
+   }
+   
    private final String user;
    private final String pass;
+   private final School school;
    private PHPSessionId phpSessId = new PHPSessionId();
    private CurrentSession currentSession = new CurrentSession();
+   private List<MarkingPeriod> markingPeriods = new ArrayList<MarkingPeriod>();
    private MarkingPeriod currentMarkingPeriod;
    
-   public Focus(String user, String pass) throws FailedLoginException, IOException {
+   public Focus(String user, String pass, School school) throws FailedLoginException, IOException {
       this.user = user;
       this.pass = pass;
-      
+      this.school = school;
+      URLRetriever.setSchool(school);
+      long start = System.currentTimeMillis();
       if (!logIn()) {
          throw new FailedLoginException();
       }
-      
-      long start = System.currentTimeMillis();
-      
-      //actually important
-      currentMarkingPeriod = getMostRecentMarkingPeriod();
-      
-      Logger.log("Confirmed most recent marking period: " + currentMarkingPeriod.getMarkingPeriodId() + " (" + (System.currentTimeMillis() - start) + " ms)");
-      start = System.currentTimeMillis();
-      
-      //actually important
-      changeMarkingPeriod(currentMarkingPeriod);
-      
-      Logger.log("Changed marking period (" + (System.currentTimeMillis() - start) + " ms)");
+      if (!currentMarkingPeriod.equals(getMostRecentMarkingPeriod())) {
+         Logger.log("Marking period incorrect, changing...");
+         Util.setMarkingPeriod(getMostRecentMarkingPeriod(), phpSessId);
+      }
+      Logger.log("Login sequence finished (" + (System.currentTimeMillis() - start) + " ms)");
    }
    
    private boolean logIn() throws IOException {
@@ -54,7 +72,7 @@ public final class Focus {
       Connection.Response response = null;
       Document login = null;
       
-      response = Jsoup.connect(Constants.FOCUS_TLD + Constants.FOCUS_LOGIN_URL)
+      response = Jsoup.connect(URLRetriever.getLoginURL())
             .data("login", "true", "data", "username=" + user + "&password=" + pass)
             .method(Method.POST)
             .timeout(Constants.CONNECTION_TIMEOUT)
@@ -69,24 +87,32 @@ public final class Focus {
          return false;
       }
       
-      phpSessId.setContent(response.cookie(Constants.PHPSESSID));
+      phpSessId.setContent(response.cookie(phpSessId.getName()));
       Logger.log(phpSessId.toString());
    
       start = System.currentTimeMillis();
       
-      String portal = null;
-      portal = Jsoup.connect(Constants.FOCUS_TLD + Constants.FOCUS_PORTAL_URL)
+      Document portal = null;
+      portal = Jsoup.connect(URLRetriever.getTLD())
             .cookie(phpSessId.getName(), phpSessId.getContent())
             .timeout(Constants.CONNECTION_TIMEOUT)
-            .get()
-            .html();
+            .get();
+      String portalStr = portal.html();
       
-      int cookieStart = portal.indexOf("var session = ") + 14;
-      int cookieEnd = portal.indexOf("Cookies.set('current_session', JSON") - 3;
-      currentSession.parseJSONFields(portal.substring(cookieStart, cookieEnd));
+      int cookieStart = portalStr.indexOf("var session = ") + 14;
+      int cookieEnd = portalStr.indexOf("Cookies.set('current_session', JSON") - 3;
+      currentSession.parseJSONFields(portalStr.substring(cookieStart, cookieEnd));
       
-      //Logger.log("Current Session: " + currentSession.getEncodedContent());
-      Logger.log("Initial marking period: " + currentSession.getMarkingPeriod() + " (" + (System.currentTimeMillis() - start) + " ms)");
+      int markingPeriodId = Integer.parseInt(
+            portal.getElementsByAttributeValue("name", "side_mp").get(0) //get the container for the marking period options
+            .getElementsByAttribute("selected").get(0).attr("value")); //get the value of the selected option
+      
+      markingPeriods = getMarkingPeriods();
+      for (MarkingPeriod mp : markingPeriods) {
+         if (mp.getMarkingPeriodId() == markingPeriodId) {
+            currentMarkingPeriod = mp;
+         }
+      }
       
       return true;
    
@@ -97,123 +123,55 @@ public final class Focus {
       currentSession.setYear(Integer.toString(markingPeriod.getYear()));
       currentSession.setMarkingPeriod(Integer.toString(markingPeriod.getMarkingPeriodId()));
       currentMarkingPeriod = markingPeriod;
-      
-      //submit request to change years
-      Jsoup.connect(Constants.FOCUS_TLD + Constants.FOCUS_PORTAL_URL)
-            .cookie(phpSessId.getName(), phpSessId.getContent())
-            .data(currentSession.asFormData())
-            .method(Method.POST)
-            .timeout(Constants.CONNECTION_TIMEOUT)
-            .execute();
+      Util.setMarkingPeriod(markingPeriod, phpSessId);
    }
-   
-   //returns a list of marking periods for the given year
-   public List<MarkingPeriod> getMarkingPeriodsForYear(int year) throws IOException {
-      
-      //ensure the year is within reasonable bounds
-      if (year < 2007 || year > Calendar.getInstance().get(Calendar.YEAR)) {
-         throw new Error("Year out of bounds");
-      }
-
-      //return this
-      List<MarkingPeriod> markingPeriods = new ArrayList<MarkingPeriod>();
-      //used for resetting after the function finishes
-      String originalYear = currentSession.getYear();
-      
-      //set the session cookie to the desired year
-      currentSession.setYear(Integer.toString(year));
-      
-      //submit request to change years
-      Jsoup.connect(Constants.FOCUS_TLD + Constants.FOCUS_PORTAL_URL)
-            .cookie(phpSessId.getName(), phpSessId.getContent())
-            .data(currentSession.asFormData())
-            .method(Method.POST)
-            .timeout(Constants.CONNECTION_TIMEOUT)
-            .execute();
-      
-      //retrieve marking period elements
-      Elements markingPeriodElements = Jsoup.connect(Constants.FOCUS_TLD + Constants.FOCUS_PORTAL_URL)
-            .cookie(phpSessId.getName(), phpSessId.getContent())
-            .timeout(Constants.CONNECTION_TIMEOUT)
-            .get().getElementsByAttributeValue("name", "side_mp").get(0).getElementsByTag("option");
-      
-      for (Element e : markingPeriodElements) {
-         Term term = Util.parseTerm(e.ownText());
-         int markingPeriodId = Integer.parseInt(e.attr("value"));
-         markingPeriods.add(new MarkingPeriod(year, term, markingPeriodId));
-      }
-      
-      //reset
-      currentSession.setYear(originalYear);
-      Jsoup.connect(Constants.FOCUS_TLD + Constants.FOCUS_PORTAL_URL)
-            .cookie(phpSessId.getName(), phpSessId.getContent())
-            .data(currentSession.asFormData())
-            .method(Method.POST)
-            .timeout(Constants.CONNECTION_TIMEOUT)
-            .execute();
-      
-      for (MarkingPeriod m : markingPeriods) {
-         System.out.println(m.getYear() + "   " + m.getTerm() + "   " + m.getMarkingPeriodId());
-      }
-      
+   //returns a list of all marking periods
+   public List<MarkingPeriod> getMarkingPeriods() throws IOException {
+      ensureMarkingPeriodsDownloaded();
       return markingPeriods;
-      
    }
-   
    //gets the most recent marking period
    public MarkingPeriod getMostRecentMarkingPeriod() throws IOException {
-      String originalYear = currentSession.getYear();
-      int syear;
-      Calendar currentDate = Calendar.getInstance();
-      if (currentDate.get(Calendar.MONTH) < Calendar.AUGUST) {
-         syear = currentDate.get(Calendar.YEAR) - 1;
-      }
-      else {
-         syear = currentDate.get(Calendar.YEAR);
-      }
-      currentSession.setYear(Integer.toString(syear));
-      
-      //submit request to change years
-      Jsoup.connect(Constants.FOCUS_TLD + Constants.FOCUS_PORTAL_URL)
-            .cookie(phpSessId.getName(), phpSessId.getContent())
-            .data(currentSession.asFormData())
-            .method(Method.POST)
-            .timeout(Constants.CONNECTION_TIMEOUT)
-            .execute();
-      
-      //retrieve marking period elements
-      Elements markingPeriodElements = Jsoup.connect(Constants.FOCUS_TLD + Constants.FOCUS_PORTAL_URL)
-            .cookie(phpSessId.getName(), phpSessId.getContent())
-            .timeout(Constants.CONNECTION_TIMEOUT)
-            .get().getElementsByAttributeValue("name", "side_mp").get(0).getElementsByTag("option");
-      
-      MarkingPeriod mostRecent = null;
-      for (Element e : markingPeriodElements) {
-         Term term = Util.parseTerm(e.ownText());
-         int markingPeriodId = Integer.parseInt(e.attr("value"));
-         MarkingPeriod current = new MarkingPeriod(syear, term, markingPeriodId);
-         if (mostRecent == null) {
-            mostRecent = current;
+      ensureMarkingPeriodsDownloaded();
+      MarkingPeriod recent = null;
+      for (MarkingPeriod mp : markingPeriods) {
+         if (recent == null) {
+            recent = mp;
          }
-         else {
-            if (current.getTerm().ordinal() > mostRecent.getTerm().ordinal()) {
-               mostRecent = current;
-            }
+         else if (mp.getYear() > recent.getYear()) {
+            recent = mp;
          }
+         else if ((mp.getYear() == recent.getYear()) &&
+               mp.getTerm().ordinal() > recent.getTerm().ordinal()) {
+            recent = mp;
+         }
+         
       }
-      
-      //reset
-      currentSession.setYear(originalYear);
-      Jsoup.connect(Constants.FOCUS_TLD + Constants.FOCUS_PORTAL_URL)
-            .cookie(phpSessId.getName(), phpSessId.getContent())
-            .data(currentSession.asFormData())
-            .method(Method.POST)
-            .timeout(Constants.CONNECTION_TIMEOUT)
-            .execute();
-      
-      return mostRecent;
+      return recent;
    }
    
+   //makes sure the marking periods have been downloaded for purposes of retrieving them
+   private void ensureMarkingPeriodsDownloaded() throws IOException {
+      if (markingPeriods.isEmpty()) {
+         try {
+            URL jsonURL = new URL(URLRetriever.getMarkingPeriodURL());
+            String jsonStr = IOUtils.toString(jsonURL);
+            
+            JSONArray jsonMarkingPeriods = new JSONObject(jsonStr).getJSONArray("Marking Periods");
+            for (int i = 0; i < jsonMarkingPeriods.length(); i++) {
+               JSONObject current = jsonMarkingPeriods.getJSONObject(i);
+               int year = current.getInt("year");
+               MarkingPeriod.Term term = MarkingPeriod.Term.valueOf(current.getString("type"));
+               int id = current.getInt("id");
+               markingPeriods.add(new MarkingPeriod(year, term, id));
+            }
+         } catch (MalformedURLException e) {
+            //this should never ever ever happen
+            e.printStackTrace();
+         }
+      }
+         
+   }
    //gets the current marking period
    public MarkingPeriod getCurrentMarkingPeriod() {
       return currentMarkingPeriod;

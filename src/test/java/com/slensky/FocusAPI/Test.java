@@ -6,6 +6,8 @@ import java.util.Scanner;
 
 import javax.security.auth.login.FailedLoginException;
 
+import com.slensky.FocusAPI.studentinfo.MarkingPeriod;
+
 public class Test {
 
    public static void main(String[] args) {
@@ -13,7 +15,7 @@ public class Test {
       @SuppressWarnings("resource")
       Scanner scan = new Scanner(System.in);
       
-      System.out.println("Focus API v0.0.3 alpha test-only version");
+      System.out.println("Focus API v0.0.4 alpha test-only version");
       System.out.println("Do not redistribute without express permission\n");
       
       Focus focus = null;
@@ -24,7 +26,7 @@ public class Test {
          String pass = readPassword();
          try {
             System.out.println();
-            focus = new Focus(user, pass);
+            focus = new Focus(user, pass, Focus.School.ASD);
             break;
          } catch(FailedLoginException e) {
             System.out.println("Login failed. Please try again");

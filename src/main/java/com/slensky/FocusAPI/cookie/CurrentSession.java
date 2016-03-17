@@ -9,9 +9,9 @@ import java.util.Map;
 
 import com.slensky.FocusAPI.util.Constants;
 
-public class CurrentSession {
+public class CurrentSession implements Cookie {
    
-   private String name = Constants.CURRENT_SESSION;
+   private String name = "current_session";
    private Map<String, String> fields = new LinkedHashMap<String, String>();
    
    public void parseJSONFields(String json) {
@@ -30,6 +30,7 @@ public class CurrentSession {
       return name;
    }
    public String getContent() {
+      //build json
       String content = "{";
       for (String k : fields.keySet()) {
          content = content + "\"" + k + "\":\"" + fields.get(k) + "\"" + ",";
@@ -37,6 +38,10 @@ public class CurrentSession {
       }
       content = content.substring(0, content.length() - 1);
       content = content + "}";
+      
+      //encode
+      content = content.replace("\"", "%22").replace(",", "%2C");
+      
       return content;
    }
    public Collection<org.jsoup.Connection.KeyVal> asFormData() {
@@ -44,9 +49,6 @@ public class CurrentSession {
       formData.add(org.jsoup.helper.HttpConnection.KeyVal.create("side_syear", getYear()));
       formData.add(org.jsoup.helper.HttpConnection.KeyVal.create("side_mp", getMarkingPeriod()));
       return formData;
-   }
-   public String getEncodedContent() {
-      return getContent().replace("\"", "%22").replace(",", "%2C");
    }
    public String getMarkingPeriod() {
       return fields.get("UserMP");

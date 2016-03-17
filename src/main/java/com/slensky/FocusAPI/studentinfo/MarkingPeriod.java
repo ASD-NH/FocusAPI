@@ -35,4 +35,17 @@ public class MarkingPeriod {
       return markingPeriodId;
    }
    
+   public String toString() {
+      return year + " - " + term + " - " + markingPeriodId;
+   }
+   public boolean equals(Object other) {
+      MarkingPeriod mp = (MarkingPeriod) other;
+      if (year == mp.year && term == mp.term && markingPeriodId == mp.markingPeriodId) {
+         return true;
+      }
+      else {
+         return false;
+      }
+   }
+   
 }
