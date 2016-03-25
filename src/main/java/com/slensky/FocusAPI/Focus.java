@@ -22,6 +22,7 @@ import org.jsoup.nodes.Document;
 
 import com.slensky.FocusAPI.cookie.CurrentSession;
 import com.slensky.FocusAPI.cookie.PHPSessionId;
+import com.slensky.FocusAPI.cookie.SessionTimeout;
 import com.slensky.FocusAPI.studentinfo.Course;
 import com.slensky.FocusAPI.studentinfo.CourseAssignments;
 import com.slensky.FocusAPI.studentinfo.FinalExam;
@@ -35,7 +36,11 @@ import com.slensky.FocusAPI.util.Logger;
 import com.slensky.FocusAPI.util.URLRetriever;
 import com.slensky.FocusAPI.util.Util;
 
-public final class Focus {
+/**
+ * Controller class for all things Focus. Encapsulates the downloader, student information, cookies, and school
+ * @author Stephan Lensky
+ */
+public class Focus {
    
    public enum School {
       ASD
@@ -44,31 +49,105 @@ public final class Focus {
    private final String user;
    private final String pass;
    private final School school;
-   private PHPSessionId phpSessId = new PHPSessionId();
-   private CurrentSession currentSession = new CurrentSession();
-   private List<MarkingPeriod> markingPeriods = new ArrayList<MarkingPeriod>();
-   private MarkingPeriod currentMarkingPeriod;
+   private final PHPSessionId sessId = new PHPSessionId();
+   private final CurrentSession currSess = new CurrentSession();
+   private final SessionTimeout sessTimeout = new SessionTimeout();
+   private final StudentInfo studentInfo;
    
+   private final FocusOptions options;
+   private final FocusDownloader downloader;
+   
+   /**
+    * Constructs a new Focus object, logs in, and ensures that 
+    * we're set to the most recent marking period
+    * @param user the user's username
+    * @param pass the user's password
+    * @param school the user's school
+    * @throws FailedLoginException if the login failed due to bad credentials
+    * @throws IOException if the connection times out
+    */
    public Focus(String user, String pass, School school) throws FailedLoginException, IOException {
       this.user = user;
       this.pass = pass;
       this.school = school;
+      
+      //config
       URLRetriever.setSchool(school);
+      options = new FocusOptions();
+
+      //init
+      downloader = new FocusDownloader(this);
+      studentInfo = new StudentInfo(this);
+      
+      //timer
       long start = System.currentTimeMillis();
+      
+      //test if the client gave us good login info and log in
       if (!logIn()) {
-         throw new FailedLoginException();
+         throw new FailedLoginException("Username/Password incorrect");
       }
-      if (!currentMarkingPeriod.equals(getMostRecentMarkingPeriod())) {
+      
+      //fix marking period if necessary
+      if (!studentInfo.getCurrentMarkingPeriod().equals(studentInfo.getMostRecentMarkingPeriod())) {
          Logger.log("Marking period incorrect, changing...");
-         changeMarkingPeriod(getMostRecentMarkingPeriod());
+         
+         try {
+            studentInfo.changeMarkingPeriod(studentInfo.getMostRecentMarkingPeriod());
+         } catch(SessionExpiredException e) {
+            // This will only happen if 24 minutes pass between the top of this constructor and here. Unlikely.
+            e.printStackTrace();
+         }
+         
       }
+      
       Logger.log("Login sequence finished (" + (System.currentTimeMillis() - start) + " ms)");
    }
    
-   private boolean logIn() throws IOException {
+   /**
+    * Logs in and sets the current marking period. Call this if the session times out
+    * @return whether or not the login was successful
+    * @throws IOException
+    */
+   public boolean logIn() throws IOException {
       
-      long start = System.currentTimeMillis();
+      boolean success = sendLoginRequest();
       
+      Connection.Response portalResp = Jsoup.connect(URLRetriever.getTLD())
+            .cookie(sessId.getName(), sessId.getContent())
+            .method(Method.GET)
+            .timeout(Constants.CONNECTION_TIMEOUT)
+            .execute();
+      
+      sessTimeout.setContent(portalResp.cookies().get("session_timeout"));
+      Logger.log(sessTimeout.toString());
+      
+      long time = System.currentTimeMillis();
+      long timeDifference = Integer.parseInt(sessTimeout.getContent()) - time / 1000;
+      downloader.setSessionExpiration(time + SessionTimeout.TIME_LIMIT + timeDifference);
+      
+      Document portal = portalResp.parse();
+      String portalStr = portal.html();
+      
+      int cookieStart = portalStr.indexOf("var session = ") + 14;
+      int cookieEnd = portalStr.indexOf("Cookies.set('current_session', JSON") - 3;
+      currSess.parseJSONFields(portalStr.substring(cookieStart, cookieEnd));
+      
+      int markingPeriodId = Integer.parseInt(
+            portal.getElementsByAttributeValue("name", "side_mp").get(0) //get the container for the marking period options
+            .getElementsByAttribute("selected").get(0).attr("value")); //get the value of the selected option
+      
+      for (MarkingPeriod mp : studentInfo.getMarkingPeriods()) {
+         if (mp.getMarkingPeriodId() == markingPeriodId) {
+            studentInfo.setCurrentMarkingPeriod(mp);
+            downloader.cachePortal(studentInfo.getCurrentMarkingPeriod(), portal, false);
+         }
+      }
+      
+      return true;
+   
+   }
+   
+   private boolean sendLoginRequest() throws IOException {
       Connection.Response response = null;
       Document login = null;
       
@@ -80,109 +159,61 @@ public final class Focus {
       login = response.parse();
       
       if (login.toString().indexOf("\"success\":true") >= 0) {
-         Logger.log("Login successful (" + (System.currentTimeMillis() - start) + " ms)");
+         Logger.log("Login successful");
+         sessId.setContent(response.cookie(sessId.getName()));
+         Logger.log(sessId.toString());
+         return true;
       }
       else {
          Logger.log("Login unsuccessful");
          return false;
       }
-      
-      phpSessId.setContent(response.cookie(phpSessId.getName()));
-      Logger.log(phpSessId.toString());
-   
-      start = System.currentTimeMillis();
-      
-      Document portal = null;
-      portal = Jsoup.connect(URLRetriever.getTLD())
-            .cookie(phpSessId.getName(), phpSessId.getContent())
-            .timeout(Constants.CONNECTION_TIMEOUT)
-            .get();
-      String portalStr = portal.html();
-      
-      int cookieStart = portalStr.indexOf("var session = ") + 14;
-      int cookieEnd = portalStr.indexOf("Cookies.set('current_session', JSON") - 3;
-      currentSession.parseJSONFields(portalStr.substring(cookieStart, cookieEnd));
-      
-      int markingPeriodId = Integer.parseInt(
-            portal.getElementsByAttributeValue("name", "side_mp").get(0) //get the container for the marking period options
-            .getElementsByAttribute("selected").get(0).attr("value")); //get the value of the selected option
-      
-      markingPeriods = getMarkingPeriods();
-      for (MarkingPeriod mp : markingPeriods) {
-         if (mp.getMarkingPeriodId() == markingPeriodId) {
-            currentMarkingPeriod = mp;
-         }
-      }
-      
-      return true;
-   
    }
    
-   // changes the marking period
-   private void changeMarkingPeriod(MarkingPeriod markingPeriod) throws IOException {
-      currentSession.setYear(Integer.toString(markingPeriod.getYear()));
-      currentSession.setMarkingPeriod(Integer.toString(markingPeriod.getMarkingPeriodId()));
-      currentMarkingPeriod = markingPeriod;
-      Util.setMarkingPeriod(markingPeriod, phpSessId);
-   }
-   //returns a list of all marking periods
-   public List<MarkingPeriod> getMarkingPeriods() throws IOException {
-      ensureMarkingPeriodsDownloaded();
-      return markingPeriods;
-   }
-   //gets the most recent marking period
-   public MarkingPeriod getMostRecentMarkingPeriod() throws IOException {
-      ensureMarkingPeriodsDownloaded();
-      MarkingPeriod recent = null;
-      for (MarkingPeriod mp : markingPeriods) {
-         if (recent == null) {
-            recent = mp;
-         }
-         else if (mp.getYear() > recent.getYear()) {
-            recent = mp;
-         }
-         else if ((mp.getYear() == recent.getYear()) &&
-               mp.getTerm().ordinal() > recent.getTerm().ordinal()) {
-            recent = mp;
-         }
-         
-      }
-      return recent;
+   /**
+    * Gets the session ID cookie
+    * @return the PHPSESSIONID cookie
+    */
+   public PHPSessionId getSessId() {
+      return sessId;
    }
    
-   //makes sure the marking periods have been downloaded for purposes of retrieving them
-   private void ensureMarkingPeriodsDownloaded() throws IOException {
-      if (markingPeriods.isEmpty()) {
-         try {
-            URL jsonURL = new URL(URLRetriever.getMarkingPeriodURL());
-            String jsonStr = IOUtils.toString(jsonURL);
-            
-            JSONArray jsonMarkingPeriods = new JSONObject(jsonStr).getJSONArray("Marking Periods");
-            for (int i = 0; i < jsonMarkingPeriods.length(); i++) {
-               JSONObject current = jsonMarkingPeriods.getJSONObject(i);
-               int year = current.getInt("year");
-               MarkingPeriod.Term term = MarkingPeriod.Term.valueOf(current.getString("type"));
-               int id = current.getInt("id");
-               markingPeriods.add(new MarkingPeriod(year, term, id));
-            }
-         } catch (MalformedURLException e) {
-            //this should never ever ever happen
-            e.printStackTrace();
-         }
-      }
-         
-   }
-   //gets the current marking period
-   public MarkingPeriod getCurrentMarkingPeriod() {
-      return currentMarkingPeriod;
+   /**
+    * Gets the current sesion cookie
+    * @return the current_session cookie
+    */
+   public CurrentSession getCurrSess() {
+      return currSess;
    }
    
-   public List<Course> getCourses(MarkingPeriod markingPeriod) {return null;}
-   public Map<Course, CourseAssignments> getCourseAssignments(MarkingPeriod markingPeriod) {return null;}
-   public List<FinalGrade> getFinalGrades() {return null;}
-   public List<FinalExam> getFinalExams() {return null;}
-   public List<GraduationRequirement> getGraduationRequrements() {return null;}
-   public List<SchoolEvent> getEventsFromCalendar(int yearStart, int yearEnd) {return null;}
-   public StudentInformation getStudentInformation(MarkingPeriod markingPeriod) {return null;}
+   /**
+    * Gets the session timeout cookie
+    * @return the sessiontimeout cookie
+    */
+   public SessionTimeout getSessTimeout() {
+      return sessTimeout;
+   }
+   
+   /**
+    * Gets the object that controls all information related to the student
+    * @return the StudentInfo object for this Focus instance
+    */
+   public StudentInfo getStudentInfo() {
+      return studentInfo;
+   }
+   /**
+    * Gets the options
+    * @return the options for this Focus instance
+    */
+   public FocusOptions getOptions() {
+      return options;
+   }
+   /**
+    * Gets the object that controls downloading all webpages that are scraped by the API
+    * @return the FocusDownloader object for this Focus instance
+    */
+   public FocusDownloader getDownloader() {
+      return downloader;
+   }
    
 }

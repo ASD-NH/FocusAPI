@@ -7,15 +7,16 @@ import java.util.Scanner;
 import javax.security.auth.login.FailedLoginException;
 
 import com.slensky.FocusAPI.studentinfo.MarkingPeriod;
+import com.slensky.FocusAPI.util.Logger;
 
 public class Test {
 
-   public static void main(String[] args) {
+   public static void main(String[] args) throws SessionExpiredException {
       
       @SuppressWarnings("resource")
       Scanner scan = new Scanner(System.in);
       
-      System.out.println("Focus API v0.0.4 alpha test-only version");
+      System.out.println("Focus API v0.0.5 alpha test-only version");
       System.out.println("Do not redistribute without express permission\n");
       
       Focus focus = null;
@@ -35,12 +36,22 @@ public class Test {
          }
       }
       
+      
+      long last = (focus.getDownloader().getSessExpiration() - System.currentTimeMillis()) / 1000;
+      while (true) {
+         long current = (focus.getDownloader().getSessExpiration() - System.currentTimeMillis()) / 1000;
+         if (current != last) {
+            Logger.log("Session expires in " + current + " seconds");
+            last = current;
+         }
+      }
+      
    }
    
    private static String readPassword() {
       Console console = System.console();
       if (console == null) {
-          System.out.println("Couldn't get Console instance");
+          System.out.println("Couldn't get Console instance. Make sure you're not using Eclipse to run this!");
           System.exit(0);
       }
 

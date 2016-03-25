@@ -10,9 +10,7 @@ public class Logger {
    }
   
    public static void log(String s) {
-      if (Constants.debugLogging) {
-         System.out.println("[INFO] " + s);
-      }
+      log(s, logType.info);
    }
    
    public static void log(String s, logType t) {
