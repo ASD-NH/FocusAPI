@@ -6,12 +6,4 @@ public class Constants {
    
    public static final boolean debugLogging = true;
    
-   public enum day {
-      MONDAY,
-      TUESDAY,
-      WEDNESDAY,
-      THURSDAY,
-      FRIDAY
-   }
-   
 }

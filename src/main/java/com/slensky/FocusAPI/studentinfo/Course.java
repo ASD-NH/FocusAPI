@@ -1,6 +1,9 @@
 package com.slensky.FocusAPI.studentinfo;
 
+import java.time.DayOfWeek;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.List;
 
 import com.slensky.FocusAPI.util.Constants;
 
@@ -9,7 +12,8 @@ public class Course {
    private final int period;
    private final String name;
    private final String teacher;
-   private final ArrayList<Constants.day> meetingDays;
+   
+   private final List<DayOfWeek> meetingDays;
    private final String roomNumber;
    private final MarkingPeriod markingPeriod;
    private final boolean isStudy;
@@ -17,9 +21,10 @@ public class Course {
    public Course(int period,
                  String name,
                  String teacher,
-                 ArrayList<Constants.day> meetingDays,
+                 List<DayOfWeek> meetingDays,
                  String roomNumber,
                  MarkingPeriod markingPeriod) {
+      
       this.period = period;
       this.name = name;
       this.teacher = teacher;
@@ -49,7 +54,7 @@ public class Course {
    public String getTeacher() {
       return teacher;
    }
-   public ArrayList<Constants.day> getMeetingDays() {
+   public List<DayOfWeek> getMeetingDays() {
       return meetingDays;
    }
    public String getRoomNumber() {

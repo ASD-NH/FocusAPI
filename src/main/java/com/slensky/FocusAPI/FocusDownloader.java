@@ -21,6 +21,7 @@ import com.slensky.FocusAPI.cookie.PHPSessionId;
 import com.slensky.FocusAPI.document.Portal;
 import com.slensky.FocusAPI.studentinfo.MarkingPeriod;
 import com.slensky.FocusAPI.util.Constants;
+import com.slensky.FocusAPI.util.Logger;
 import com.slensky.FocusAPI.util.URLRetriever;
 
 public class FocusDownloader {
@@ -78,6 +79,7 @@ public class FocusDownloader {
    
    public Document getDocument(MarkingPeriod mp, String url) throws IOException, SessionExpiredException {
       ensureLogin();
+      setMarkingPeriod(mp);
       Map<String, String> cookieMap = new HashMap<String, String>();
       cookieMap.put(focus.getSessId().getName(), focus.getSessId().getContent());
       Document document = Jsoup.connect(URLRetriever.getTLD())
@@ -91,6 +93,8 @@ public class FocusDownloader {
    public void setMarkingPeriod(MarkingPeriod markingPeriod) throws IOException, SessionExpiredException {
       ensureLogin();
       if (focus.getStudentInfo().getCurrentMarkingPeriod() != markingPeriod) {
+         Logger.log("Changing marking period to " + markingPeriod.getTerm() + " " + markingPeriod.getYear() + " " + markingPeriod.getMarkingPeriodId());
+         
          focus.getCurrSess().setYear(Integer.toString(markingPeriod.getYear()));
          focus.getCurrSess().setMarkingPeriod(Integer.toString(markingPeriod.getMarkingPeriodId()));
          
@@ -99,7 +103,7 @@ public class FocusDownloader {
          formData.add(HttpConnection.KeyVal.create("side_mp", Integer.toString(markingPeriod.getMarkingPeriodId())));
          
          //submit request to change years
-         Jsoup.connect(URLRetriever.getTLD())
+         Jsoup.connect(URLRetriever.getPortalURL())
                .cookie(focus.getSessId().getName(), focus.getSessId().getContent())
                .data(formData)
                .method(Method.POST)
@@ -112,7 +116,7 @@ public class FocusDownloader {
    
    private void ensureLogin() throws SessionExpiredException {
       //give 10 seconds of flex time
-      if (System.currentTimeMillis() < (sessExpiration - (10 * 1000))) {
+      if (System.currentTimeMillis() > (sessExpiration - (10 * 1000))) {
          throw new SessionExpiredException("Session has expired. Please call the logIn() function of the Focus object to handle this exception.");
       }
    }

@@ -3,13 +3,20 @@ package com.slensky.FocusAPI;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.DayOfWeek;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 
 import com.slensky.FocusAPI.cookie.CurrentSession;
 import com.slensky.FocusAPI.cookie.PHPSessionId;
@@ -19,8 +26,10 @@ import com.slensky.FocusAPI.studentinfo.FinalExam;
 import com.slensky.FocusAPI.studentinfo.FinalGrade;
 import com.slensky.FocusAPI.studentinfo.GraduationRequirement;
 import com.slensky.FocusAPI.studentinfo.MarkingPeriod;
+import com.slensky.FocusAPI.studentinfo.PortalInfo;
 import com.slensky.FocusAPI.studentinfo.SchoolEvent;
 import com.slensky.FocusAPI.studentinfo.StudentInformation;
+import com.slensky.FocusAPI.util.Constants;
 import com.slensky.FocusAPI.util.URLRetriever;
 import com.slensky.FocusAPI.util.Util;
 
@@ -29,8 +38,10 @@ public class StudentInfo {
    private final Focus focus;
    private final FocusDownloader downloader;
    
-   private List<MarkingPeriod> markingPeriods = new ArrayList<MarkingPeriod>();
    private MarkingPeriod currentMarkingPeriod;
+   
+   private List<MarkingPeriod> markingPeriods = new ArrayList<MarkingPeriod>();
+   private PortalInfo portalInfo;
    
    public StudentInfo(Focus focus) {
       this.focus = focus;
@@ -97,6 +108,103 @@ public class StudentInfo {
    //gets the current marking period
    public MarkingPeriod getCurrentMarkingPeriod() {
       return currentMarkingPeriod;
+   }
+   
+   public PortalInfo getPortalInfo(MarkingPeriod mp) throws SessionExpiredException, IOException {
+      if (portalInfo == null) {
+         
+         Document portal = focus.getDownloader().getPortal(mp);
+         Elements courseLinks = portal.getElementsByAttributeValueStarting("href", "Modules.php?modname=Grades/StudentGBGrades.php?course_period_id=");
+         
+         Elements courseNames = new Elements();
+         Elements courseGrades = new Elements();
+         
+         for (Element e : courseLinks) {
+            //weed out duplicate elements (multiple mentions of courses etc.
+            if (!(e.html().indexOf("›") >= 0 || e.html().indexOf("<b>") >= 0)) {
+               //sort by if the elements by name/grade
+               if (e.html().indexOf('%') >= 0) {
+                  courseGrades.add(e);
+               }
+               else {
+                  courseNames.add(e);
+               }
+            }
+         }
+         assert(courseNames.size() == courseGrades.size());
+         
+         List<Course> courses = new ArrayList<Course>();
+         List<Integer> grades = new ArrayList<Integer>();
+         
+         for (Element e : courseNames) {
+            String t = e.text();
+            
+            String name, teacher;
+            int period;
+            List<DayOfWeek> meetingDays = new ArrayList<DayOfWeek>();
+            
+            String[] courseInfo = t.split(" - ");
+            name = courseInfo[0];
+            teacher = courseInfo[4];
+            
+            String periodStr = courseInfo[1].substring(courseInfo[1].length() - 1, courseInfo[1].length());
+            period = Integer.parseInt(periodStr);
+            
+            for (char d : courseInfo[2].toLowerCase().toCharArray()) {
+               switch (d) {
+                  case 'm':
+                     meetingDays.add(DayOfWeek.MONDAY);
+                     break;
+                  case 't':
+                     meetingDays.add(DayOfWeek.TUESDAY);
+                     break;
+                  case 'w':
+                     meetingDays.add(DayOfWeek.WEDNESDAY);
+                     break;
+                  case 'h':
+                     meetingDays.add(DayOfWeek.THURSDAY);
+                     break;
+                  case 'f':
+                     meetingDays.add(DayOfWeek.FRIDAY);
+                     break;
+               }
+            }
+            
+            courses.add(new Course(period, name, teacher, meetingDays, null, mp));
+            
+         }
+         for (Element e : courseGrades) {
+            String t = e.text();
+            t = t.substring(0, t.indexOf('%'));
+            grades.add(Integer.parseInt(t));
+         }
+         
+         List<SchoolEvent> upcomingEvents = new ArrayList<SchoolEvent>();
+         Elements events = portal.getElementsByAttributeValueStarting("onclick", "switchMenu(\"calendar");
+         
+         for (Element e : events) {
+            String t = e.text();
+            
+            String date = t.substring(0, t.indexOf(": "));
+            Calendar eventDate = Calendar.getInstance();
+            SimpleDateFormat dateFormat = new SimpleDateFormat("MMM d, yyyy");
+            try {
+               eventDate.setTime(dateFormat.parse(date));
+            } catch (ParseException e1) {
+               //should never happen, we do a unit test for this
+               e1.printStackTrace();
+            }
+            
+            String name = t.substring(t.indexOf(": ") + 2, t.length());
+            
+            upcomingEvents.add(new SchoolEvent(eventDate, name));
+            
+         }
+         
+         portalInfo = new PortalInfo(courses, grades, upcomingEvents, mp);
+         
+      }
+      return portalInfo;
    }
    
    public List<Course> getCourses(MarkingPeriod markingPeriod) {return null;}

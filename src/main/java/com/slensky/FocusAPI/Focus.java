@@ -101,6 +101,14 @@ public class Focus {
       }
       
       Logger.log("Login sequence finished (" + (System.currentTimeMillis() - start) + " ms)");
+      
+      try {
+         studentInfo.getPortalInfo(studentInfo.getCurrentMarkingPeriod());
+      } catch (SessionExpiredException e) {
+         // TODO Auto-generated catch block
+         e.printStackTrace();
+      }
+      
    }
    
    /**

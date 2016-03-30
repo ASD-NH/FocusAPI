@@ -16,7 +16,7 @@ public class Test {
       @SuppressWarnings("resource")
       Scanner scan = new Scanner(System.in);
       
-      System.out.println("Focus API v0.1.0 alpha test-only version");
+      System.out.println("Focus API v0.2.0 alpha test-only version");
       System.out.println("Do not redistribute without express permission\n");
       
       Focus focus = null;
@@ -33,16 +33,6 @@ public class Test {
             System.out.println("Login failed. Please try again");
          } catch(IOException e) {
             System.out.println("Connection timed out, please try again.");
-         }
-      }
-      
-      
-      long last = (focus.getDownloader().getSessExpiration() - System.currentTimeMillis()) / 1000;
-      while (true) {
-         long current = (focus.getDownloader().getSessExpiration() - System.currentTimeMillis()) / 1000;
-         if (current != last) {
-            Logger.log("Session expires in " + current + " seconds");
-            last = current;
          }
       }
       
