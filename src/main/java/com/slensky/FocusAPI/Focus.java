@@ -27,10 +27,9 @@ import com.slensky.FocusAPI.studentinfo.Course;
 import com.slensky.FocusAPI.studentinfo.CourseAssignments;
 import com.slensky.FocusAPI.studentinfo.FinalExam;
 import com.slensky.FocusAPI.studentinfo.FinalGrade;
-import com.slensky.FocusAPI.studentinfo.GraduationRequirement;
 import com.slensky.FocusAPI.studentinfo.MarkingPeriod;
 import com.slensky.FocusAPI.studentinfo.SchoolEvent;
-import com.slensky.FocusAPI.studentinfo.StudentInformation;
+import com.slensky.FocusAPI.studentinfo.StudentAccountInfo;
 import com.slensky.FocusAPI.util.Constants;
 import com.slensky.FocusAPI.util.Logger;
 import com.slensky.FocusAPI.util.URLRetriever;
@@ -102,13 +101,6 @@ public class Focus {
       
       Logger.log("Login sequence finished (" + (System.currentTimeMillis() - start) + " ms)");
       
-      try {
-         studentInfo.getPortalInfo(studentInfo.getCurrentMarkingPeriod());
-      } catch (SessionExpiredException e) {
-         // TODO Auto-generated catch block
-         e.printStackTrace();
-      }
-      
    }
    
    /**
@@ -147,7 +139,7 @@ public class Focus {
       for (MarkingPeriod mp : studentInfo.getMarkingPeriods()) {
          if (mp.getMarkingPeriodId() == markingPeriodId) {
             studentInfo.setCurrentMarkingPeriod(mp);
-            downloader.cachePortal(studentInfo.getCurrentMarkingPeriod(), portal, false);
+            downloader.getPortal().cache(studentInfo.getCurrentMarkingPeriod(), portal, false);
          }
       }
       

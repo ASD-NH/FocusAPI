@@ -12,7 +12,8 @@ public class MarkingPeriod {
       SEMESTER_TWO,
       TRIMESTER_ONE,
       TRIMESTER_TWO,
-      TRIMESTER_THREE
+      TRIMESTER_THREE,
+      FULL_YEAR
    };
    
    private final int year;

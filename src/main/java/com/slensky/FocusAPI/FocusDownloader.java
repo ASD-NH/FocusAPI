@@ -1,8 +1,11 @@
 package com.slensky.FocusAPI;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLConnection;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -14,11 +17,11 @@ import org.jsoup.Jsoup;
 import org.jsoup.Connection.Method;
 import org.jsoup.helper.HttpConnection;
 import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 
 import com.slensky.FocusAPI.cookie.Cookie;
 import com.slensky.FocusAPI.cookie.CurrentSession;
 import com.slensky.FocusAPI.cookie.PHPSessionId;
-import com.slensky.FocusAPI.document.Portal;
 import com.slensky.FocusAPI.studentinfo.MarkingPeriod;
 import com.slensky.FocusAPI.util.Constants;
 import com.slensky.FocusAPI.util.Logger;
@@ -27,15 +30,18 @@ import com.slensky.FocusAPI.util.URLRetriever;
 public class FocusDownloader {
    
    private final Focus focus;
-   
    private long sessExpiration;
    
-   private Portal portal;
+   private FocusDocument portal;
+   private FocusDocument schedule;
+   
+   private FocusCSV scheduleCSV;
+   
    private String markingPeriodJSON;
    
    public FocusDownloader(Focus focus) {
       this.focus = focus;
-      this.portal = new Portal(this);
+      this.portal = new FocusDocument(this, URLRetriever.getPortalURL());
    }
    
    public long getSessExpiration() {
@@ -45,14 +51,20 @@ public class FocusDownloader {
       this.sessExpiration = sessionExpiration;
    }
    
-   public void downloadPortal(MarkingPeriod mp, boolean force) throws IOException, SessionExpiredException {
-      portal.downloadPortal(mp, force);
+   public FocusDocument getPortal() {
+      return portal;
    }
-   public void cachePortal(MarkingPeriod mp, Document portal, boolean overwrite) {
-      this.portal.cachePortal(mp, portal, overwrite);
+   public void setSchedule(FocusDocument schedule) {
+      this.schedule = schedule;
    }
-   public Document getPortal(MarkingPeriod mp) throws IOException, SessionExpiredException {
-      return portal.getPortal(mp);
+   public FocusDocument getSchedule() {
+      return schedule;
+   }
+   public void setScheduleCSV(FocusCSV scheduleCSV) {
+      this.scheduleCSV = scheduleCSV;
+   }
+   public FocusCSV getScheduleCSV() {
+      return scheduleCSV;
    }
    
    public void downloadMarkingPeriodJSON(boolean force) throws IOException {
@@ -82,7 +94,7 @@ public class FocusDownloader {
       setMarkingPeriod(mp);
       Map<String, String> cookieMap = new HashMap<String, String>();
       cookieMap.put(focus.getSessId().getName(), focus.getSessId().getContent());
-      Document document = Jsoup.connect(URLRetriever.getTLD())
+      Document document = Jsoup.connect(url)
             .cookies(cookieMap)
             .timeout(Constants.CONNECTION_TIMEOUT)
             .get();
@@ -112,6 +124,35 @@ public class FocusDownloader {
          
          focus.getStudentInfo().setCurrentMarkingPeriod(markingPeriod);
       }  
+   }
+   
+   public String getCSV(MarkingPeriod mp, String url) throws IOException, SessionExpiredException {
+      ensureLogin();
+      setMarkingPeriod(mp);
+      URL csvURL = null;;
+      try {
+         csvURL = new URL(url);
+      } catch (MalformedURLException e) {
+         //should hopefully never happen
+         e.printStackTrace();
+      }
+      
+      URLConnection conn = csvURL.openConnection();
+      String cookie = focus.getSessId().getName() + "=" + focus.getSessId().getContent();
+      conn.setRequestProperty("Cookie", cookie);
+      conn.connect();
+      
+      BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+      StringBuilder response = new StringBuilder();
+      String inputLine;
+      
+      while ((inputLine = in.readLine()) != null) {
+         response.append(inputLine + "\n");
+      }
+      
+      in.close();
+      
+      return response.toString().substring(0, response.length() - 1);
    }
    
    private void ensureLogin() throws SessionExpiredException {

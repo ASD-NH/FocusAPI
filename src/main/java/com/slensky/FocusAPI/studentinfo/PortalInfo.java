@@ -23,7 +23,7 @@ public class PortalInfo {
    public String toString() {
       String out = "Course information:\n";
       for (int i = 0; i < courses.size(); i++) {
-         out += courses.get(i).toString() + " - " + grades.get(i) + "\n";
+         out += courses.get(i).toString() + " - " + grades.get(i) + "%\n";
       }
       out += "\nUpcoming Events:\n";
       for (SchoolEvent se : upcomingEvents) {
