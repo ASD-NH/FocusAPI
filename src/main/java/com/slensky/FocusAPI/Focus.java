@@ -28,6 +28,7 @@ public class Focus {
    
    private final String user;
    private final String pass;
+   //possibly unneeded? comment back in if that changes
    //private final School school;
    private final PHPSessionId sessId = new PHPSessionId();
    private final CurrentSession currSess = new CurrentSession();
@@ -187,7 +188,7 @@ public class Focus {
    }
    /**
     * Gets the options
-    * @return the options for this Focus instance
+    * @return the options for all Focus instances
     */
    public static FocusOptions getOptions() {
       return options;

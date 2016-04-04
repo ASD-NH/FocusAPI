@@ -38,7 +38,7 @@ public class SchoolEvent {
    
    public String toString() {
       String out = "";
-      out += eventDate.get(Calendar.MONTH) + "/" + eventDate.get(Calendar.DAY_OF_MONTH) + "/" + eventDate.get(Calendar.YEAR) + ": ";
+      out += (eventDate.get(Calendar.MONTH) + 1) + "/" + eventDate.get(Calendar.DAY_OF_MONTH) + "/" + eventDate.get(Calendar.YEAR) + ": ";
       out += name;
       if (description != null) {
          out += " - " + description;

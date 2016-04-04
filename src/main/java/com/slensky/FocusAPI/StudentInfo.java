@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import org.json.JSONArray;
@@ -166,12 +167,18 @@ public class StudentInfo {
             
             String date = t.substring(0, t.indexOf(": "));
             Calendar eventDate = Calendar.getInstance();
-            SimpleDateFormat dateFormat = new SimpleDateFormat("MMM d, yyyy");
+            SimpleDateFormat dateFormat = new SimpleDateFormat("MMM d, yyyy", Locale.US);
             try {
                eventDate.setTime(dateFormat.parse(date));
             } catch (ParseException e1) {
-               //should never happen, we do a unit test for this
-               e1.printStackTrace();
+               date = t.substring(4, t.length());
+               dateFormat = new SimpleDateFormat("MMMM d'th', yyyy", Locale.US);
+               try {
+                  eventDate.setTime(dateFormat.parse(date));
+               } catch (ParseException e2) {
+                  // unreachable unless Focus changes date format again
+                  e2.printStackTrace();
+               }
             }
             
             String name = t.substring(t.indexOf(": ") + 2, t.length());
