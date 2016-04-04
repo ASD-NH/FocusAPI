@@ -4,8 +4,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.jsoup.nodes.Document;
-
 import com.slensky.FocusAPI.studentinfo.MarkingPeriod;
 
 public class FocusCSV {

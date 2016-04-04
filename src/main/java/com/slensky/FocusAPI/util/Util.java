@@ -1,26 +1,10 @@
 package com.slensky.FocusAPI.util;
 
-import java.io.IOException;
 import java.time.DayOfWeek;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
-import org.jsoup.Jsoup;
-import org.jsoup.helper.HttpConnection;
-import org.jsoup.Connection;
-import org.jsoup.Connection.Method;
-import org.jsoup.nodes.Document;
-
-import com.slensky.FocusAPI.Focus.School;
-import com.slensky.FocusAPI.cookie.Cookie;
-import com.slensky.FocusAPI.cookie.CurrentSession;
-import com.slensky.FocusAPI.cookie.PHPSessionId;
-import com.slensky.FocusAPI.studentinfo.MarkingPeriod;
 import com.slensky.FocusAPI.studentinfo.MarkingPeriod.Term;
 
 public class Util {

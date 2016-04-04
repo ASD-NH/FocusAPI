@@ -2,7 +2,6 @@ package com.slensky.FocusAPI;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.net.URL;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.DayOfWeek;
@@ -12,18 +11,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVParser;
-import org.apache.commons.csv.CSVRecord;
-import org.apache.commons.io.IOUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
-import com.slensky.FocusAPI.cookie.CurrentSession;
-import com.slensky.FocusAPI.cookie.PHPSessionId;
 import com.slensky.FocusAPI.studentinfo.Course;
 import com.slensky.FocusAPI.studentinfo.CourseAssignments;
 import com.slensky.FocusAPI.studentinfo.FinalExam;
@@ -33,7 +26,6 @@ import com.slensky.FocusAPI.studentinfo.MarkingPeriod.Term;
 import com.slensky.FocusAPI.studentinfo.PortalInfo;
 import com.slensky.FocusAPI.studentinfo.SchoolEvent;
 import com.slensky.FocusAPI.studentinfo.StudentAccountInfo;
-import com.slensky.FocusAPI.util.Constants;
 import com.slensky.FocusAPI.util.Logger;
 import com.slensky.FocusAPI.util.URLRetriever;
 import com.slensky.FocusAPI.util.Util;

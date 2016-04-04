@@ -1,20 +1,9 @@
 package com.slensky.FocusAPI;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLConnection;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 import javax.security.auth.login.FailedLoginException;
 
-import org.apache.commons.io.IOUtils;
-import org.json.JSONArray;
-import org.json.JSONObject;
 import org.jsoup.Connection;
 import org.jsoup.Connection.Method;
 import org.jsoup.Jsoup;
@@ -23,17 +12,10 @@ import org.jsoup.nodes.Document;
 import com.slensky.FocusAPI.cookie.CurrentSession;
 import com.slensky.FocusAPI.cookie.PHPSessionId;
 import com.slensky.FocusAPI.cookie.SessionTimeout;
-import com.slensky.FocusAPI.studentinfo.Course;
-import com.slensky.FocusAPI.studentinfo.CourseAssignments;
-import com.slensky.FocusAPI.studentinfo.FinalExam;
-import com.slensky.FocusAPI.studentinfo.FinalGrade;
 import com.slensky.FocusAPI.studentinfo.MarkingPeriod;
-import com.slensky.FocusAPI.studentinfo.SchoolEvent;
-import com.slensky.FocusAPI.studentinfo.StudentAccountInfo;
 import com.slensky.FocusAPI.util.Constants;
 import com.slensky.FocusAPI.util.Logger;
 import com.slensky.FocusAPI.util.URLRetriever;
-import com.slensky.FocusAPI.util.Util;
 
 /**
  * Controller class for all things Focus. Encapsulates the downloader, student information, cookies, and school
@@ -47,7 +29,7 @@ public class Focus {
    
    private final String user;
    private final String pass;
-   private final School school;
+   //private final School school;
    private final PHPSessionId sessId = new PHPSessionId();
    private final CurrentSession currSess = new CurrentSession();
    private final SessionTimeout sessTimeout = new SessionTimeout();
@@ -68,7 +50,7 @@ public class Focus {
    public Focus(String user, String pass, School school) throws FailedLoginException, IOException {
       this.user = user;
       this.pass = pass;
-      this.school = school;
+      //this.school = school;
       
       //config
       URLRetriever.setSchool(school);
@@ -111,6 +93,9 @@ public class Focus {
    public boolean logIn() throws IOException {
       
       boolean success = sendLoginRequest();
+      if (!success) {
+         return false;
+      }
       
       Connection.Response portalResp = Jsoup.connect(URLRetriever.getTLD())
             .cookie(sessId.getName(), sessId.getContent())

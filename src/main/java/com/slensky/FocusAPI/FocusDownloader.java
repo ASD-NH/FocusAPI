@@ -13,15 +13,11 @@ import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
 import org.jsoup.Connection;
-import org.jsoup.Jsoup;
 import org.jsoup.Connection.Method;
+import org.jsoup.Jsoup;
 import org.jsoup.helper.HttpConnection;
 import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
 
-import com.slensky.FocusAPI.cookie.Cookie;
-import com.slensky.FocusAPI.cookie.CurrentSession;
-import com.slensky.FocusAPI.cookie.PHPSessionId;
 import com.slensky.FocusAPI.studentinfo.MarkingPeriod;
 import com.slensky.FocusAPI.util.Constants;
 import com.slensky.FocusAPI.util.Logger;

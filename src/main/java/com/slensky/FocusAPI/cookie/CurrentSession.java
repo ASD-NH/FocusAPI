@@ -1,13 +1,9 @@
 package com.slensky.FocusAPI.cookie;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
-
-import com.slensky.FocusAPI.util.Constants;
 
 public class CurrentSession implements Cookie {
    

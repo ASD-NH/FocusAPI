@@ -1,11 +1,7 @@
 package com.slensky.FocusAPI.studentinfo;
 
 import java.time.DayOfWeek;
-import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.List;
-
-import com.slensky.FocusAPI.util.Constants;
 
 public class Course {
    
