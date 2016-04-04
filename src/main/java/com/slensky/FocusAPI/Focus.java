@@ -13,7 +13,6 @@ import com.slensky.FocusAPI.cookie.CurrentSession;
 import com.slensky.FocusAPI.cookie.PHPSessionId;
 import com.slensky.FocusAPI.cookie.SessionTimeout;
 import com.slensky.FocusAPI.studentinfo.MarkingPeriod;
-import com.slensky.FocusAPI.util.Constants;
 import com.slensky.FocusAPI.util.Logger;
 import com.slensky.FocusAPI.util.URLRetriever;
 
@@ -35,7 +34,7 @@ public class Focus {
    private final SessionTimeout sessTimeout = new SessionTimeout();
    private final StudentInfo studentInfo;
    
-   private final FocusOptions options;
+   private static final FocusOptions options = new FocusOptions();
    private final FocusDownloader downloader;
    
    /**
@@ -54,8 +53,7 @@ public class Focus {
       
       //config
       URLRetriever.setSchool(school);
-      options = new FocusOptions();
-
+      
       //init
       downloader = new FocusDownloader(this);
       studentInfo = new StudentInfo(this);
@@ -75,7 +73,8 @@ public class Focus {
          try {
             studentInfo.changeMarkingPeriod(studentInfo.getMostRecentMarkingPeriod());
          } catch(SessionExpiredException e) {
-            // This will only happen if 24 minutes pass between the top of this constructor and here. Unlikely.
+            // This will only happen if 24 minutes pass between the top of this constructor and here
+            // Pretty unlikely, so just print out a stacktrace and hope for the best
             e.printStackTrace();
          }
          
@@ -100,7 +99,7 @@ public class Focus {
       Connection.Response portalResp = Jsoup.connect(URLRetriever.getTLD())
             .cookie(sessId.getName(), sessId.getContent())
             .method(Method.GET)
-            .timeout(Constants.CONNECTION_TIMEOUT)
+            .timeout(options.getTimeout())
             .execute();
       
       sessTimeout.setContent(portalResp.cookies().get("session_timeout"));
@@ -139,7 +138,7 @@ public class Focus {
       response = Jsoup.connect(URLRetriever.getLoginURL())
             .data("login", "true", "data", "username=" + user + "&password=" + pass)
             .method(Method.POST)
-            .timeout(Constants.CONNECTION_TIMEOUT)
+            .timeout(options.getTimeout())
             .execute();
       login = response.parse();
       
@@ -190,7 +189,7 @@ public class Focus {
     * Gets the options
     * @return the options for this Focus instance
     */
-   public FocusOptions getOptions() {
+   public static FocusOptions getOptions() {
       return options;
    }
    /**

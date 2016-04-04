@@ -1,5 +1,7 @@
 package com.slensky.FocusAPI.util;
 
+import com.slensky.FocusAPI.Focus;
+
 public class Logger {
    
    public static enum logType {
@@ -14,7 +16,7 @@ public class Logger {
    }
    
    public static void log(String s, logType t) {
-      if (Constants.debugLogging) {
+      if (Focus.getOptions().getLogging()) {
          String output = "";
          switch (t) {
              case error_severe:

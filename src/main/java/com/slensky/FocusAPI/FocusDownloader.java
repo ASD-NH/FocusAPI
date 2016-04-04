@@ -19,7 +19,6 @@ import org.jsoup.helper.HttpConnection;
 import org.jsoup.nodes.Document;
 
 import com.slensky.FocusAPI.studentinfo.MarkingPeriod;
-import com.slensky.FocusAPI.util.Constants;
 import com.slensky.FocusAPI.util.Logger;
 import com.slensky.FocusAPI.util.URLRetriever;
 
@@ -92,7 +91,7 @@ public class FocusDownloader {
       cookieMap.put(focus.getSessId().getName(), focus.getSessId().getContent());
       Document document = Jsoup.connect(url)
             .cookies(cookieMap)
-            .timeout(Constants.CONNECTION_TIMEOUT)
+            .timeout(Focus.getOptions().getTimeout())
             .get();
       
       return document;
@@ -115,7 +114,7 @@ public class FocusDownloader {
                .cookie(focus.getSessId().getName(), focus.getSessId().getContent())
                .data(formData)
                .method(Method.POST)
-               .timeout(Constants.CONNECTION_TIMEOUT)
+               .timeout(Focus.getOptions().getTimeout())
                .execute();
          
          focus.getStudentInfo().setCurrentMarkingPeriod(markingPeriod);
