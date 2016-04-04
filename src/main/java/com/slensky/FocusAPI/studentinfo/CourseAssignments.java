@@ -2,48 +2,69 @@ package com.slensky.FocusAPI.studentinfo;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class CourseAssignments {
    
-   private final List<AssignmentCategory> assignmentCategories;
+   private final List<Assignment> assignments;
+   private final Map<String, Double> categoryWeights;
+   private final Map<String, Boolean> isCategoryGraded;
    private final boolean hasCategories;
    private final boolean isGraded;
    
-   public CourseAssignments(AssignmentCategory... assignmentCategories) {
-      hasCategories = true;
-      this.assignmentCategories = new ArrayList<AssignmentCategory>(Arrays.asList(assignmentCategories));
+   public CourseAssignments(List<Assignment> assignments, Map<String, Double> categoryWeights) {
       
-      boolean isGraded = false;
-      for (AssignmentCategory c : assignmentCategories) {
-         if (c.isGraded()) {
-            isGraded = true;
-         }
-      }
-      this.isGraded = isGraded;
-   }
-   
-   public CourseAssignments(Assignment... assignments) {
-      hasCategories = false;
-      this.assignmentCategories = new ArrayList<AssignmentCategory>();
-      this.assignmentCategories.add(new AssignmentCategory(null, 1.0, Arrays.asList(assignments)));
+      this.assignments = assignments;
       
+      //set up whether or not the course overall is graded
       boolean isGraded = false;
       for (Assignment a : assignments) {
          if (a.getGrade().isGraded()) {
             isGraded = true;
+            break;
          }
       }
       this.isGraded = isGraded;
+      
+      //set up category weights
+      this.categoryWeights = categoryWeights;
+      if (categoryWeights != null) {
+         hasCategories = true;
+      }
+      else {
+         hasCategories = false;
+      }
+      
+      //set up category isGraded map
+      if (hasCategories) {
+         isCategoryGraded = new HashMap<String, Boolean>();
+         for (String c : getCategories()) {
+            List<Assignment> categoryAssignments = getAssignmentsForCategory(c);
+            boolean categoryGraded = false;
+            for (Assignment a : categoryAssignments) {
+               if (a.getGrade().isGraded()) {
+                  categoryGraded = true;
+                  break;
+               }
+            }
+            this.isCategoryGraded.put(c, categoryGraded);
+         }
+      }
+      else {
+         isCategoryGraded = null;
+      }
+      
    }
    
    public Double getOverallGrade() {
       if (isGraded) {
          double overallGrade = 0;
-         for (AssignmentCategory c : assignmentCategories) {
-            if (c.isGraded()) {
-               overallGrade += getCategoryGrade(c);
-            }
+         for (String s : getCategories()) {
+            overallGrade += getCategoryGrade(s) * categoryWeights.get(s);
          }
          return overallGrade;
       }
@@ -52,31 +73,77 @@ public class CourseAssignments {
       }
    }
    
-   public static Double getCategoryGrade(AssignmentCategory category) {
-      if (category.isGraded()) {
-         double pointsRecieved = 0;
+   public Double getCategoryGrade(String category) {
+      List<Assignment> assignmentsForCategory = getAssignmentsForCategory(category);
+      if (assignmentsForCategory != null && isCategoryGraded.get(category)) {
+         double pointsReceived = 0;
          double pointsMax = 0;
-         for (Assignment a : category.getAssignments()) {
-            Grade grade = a.getGrade();
-            if (grade.isGraded() && !grade.isPassFail()) {
-               pointsRecieved += grade.getPointsRecieved();
-               pointsMax += grade.getPointsMax();
+         for (Assignment a : assignmentsForCategory) {
+            if (a.getGrade().isGraded()) {
+               pointsReceived += a.getGrade().getPointsReceived();
+               pointsMax += a.getGrade().getPointsMax();
             }
          }
-         return pointsRecieved / pointsMax;
+         return pointsReceived / pointsMax;
       }
-      return null;
+      else {
+         return null;
+      }
    }
    
-   /* Accessors */
-   public List<AssignmentCategory> getAssignmentCategories() {
-      return assignmentCategories;
+   
+   public List<Assignment> getAssignments() {
+      return assignments;
+   }
+   public List<Assignment> getAssignmentsForCategory(String category) {
+      List<Assignment> assignmentsForCategory = new ArrayList<Assignment>();
+      for (Assignment a : assignments) {
+         if (a.getCategory().equals(category)) {
+            assignmentsForCategory.add(a);
+         }
+      }
+      if (assignmentsForCategory.isEmpty()) {
+         return null;
+      }
+      else {
+         return assignmentsForCategory;
+      }
+   }
+   public Set<String> getCategories() {
+      return categoryWeights.keySet();
+   }
+   public Set<String> getGradedCategories() {
+      Set<String> gradedCategories = new HashSet<String>();
+      for (String c : getCategories()) {
+         if (isCategoryGraded.get(c)) {
+            gradedCategories.add(c);
+         }
+      }
+      if (gradedCategories.isEmpty()) {
+         return null;
+      }
+      else {
+         return gradedCategories;
+      }
    }
    public boolean hasCategories() {
       return hasCategories;
    }
    public boolean isGraded() {
       return isGraded;
+   }
+   
+   public String toString() {
+      String out = "";
+      out += isGraded ? "Overall grade: " + Double.toString(getOverallGrade() * 100) + "%" : "Not graded";
+      out += hasCategories() ? " - Number of categories: " + getCategories().size() : " - No categories";
+      if (hasCategories()) {
+         for (String c : getCategories()) {
+            out += " - " + c + ": " + Double.toString(getCategoryGrade(c) * 100) + "%";
+         }
+      }
+      
+      return out;
    }
    
 }

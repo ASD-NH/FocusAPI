@@ -12,7 +12,7 @@ public class SchoolEvent {
    public SchoolEvent(Calendar eventDate, String name) {
       this.eventDate = eventDate;
       this.name = name;
-      this.description = "";
+      this.description = null;
       this.isEventSchoolClosed = isSchoolClosed();
    }
    public SchoolEvent(Calendar eventDate, String name, String description) {
@@ -34,6 +34,16 @@ public class SchoolEvent {
       else {
          return false;
       }
+   }
+   
+   public String toString() {
+      String out = "";
+      out += eventDate.get(Calendar.MONTH) + eventDate.get(Calendar.DAY_OF_MONTH) + eventDate.get(Calendar.YEAR) + ": ";
+      out += name;
+      if (description != null) {
+         out += " - " + description;
+      }
+      return out;
    }
    
    public Calendar getEventDate() {

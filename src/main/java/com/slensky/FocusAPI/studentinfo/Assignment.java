@@ -9,40 +9,51 @@ public class Assignment {
    private final Calendar dateAssigned;
    private final Calendar dateDue;
    private final Calendar lastModified;
+   private final String category;
+   private final boolean hasCategory;
    private final String comment;
    private final boolean hasComment;
-   
-   public Assignment(String name,
-                     Grade grade,
-                     Calendar dateAssigned,
-                     Calendar dateDue,
-                     Calendar lastModified) {
-      
-      this.name = name;
-      this.grade = grade;
-      this.dateAssigned = dateAssigned;
-      this.dateDue = dateDue;
-      this.lastModified = lastModified;
-      this.comment = null;
-      this.hasComment = false;
-      
-   }
    
    public Assignment(String name,
          String comment,
          Grade grade,
          Calendar dateAssigned,
          Calendar dateDue,
-         Calendar lastModified) {
+         Calendar lastModified,
+         String category) {
 
-         this.name = name;
-         this.grade = grade;
-         this.dateAssigned = dateAssigned;
-         this.dateDue = dateDue;
-         this.lastModified = lastModified;
-         this.comment = comment;
+      this.name = name;
+      this.grade = grade;
+      this.dateAssigned = dateAssigned;
+      this.dateDue = dateDue;
+      this.lastModified = lastModified;
+      
+      this.comment = comment;
+      if (comment == null) {
+         this.hasComment = false;
+      }
+      else {
          this.hasComment = true;
-
+      }
+      
+      this.category = category;
+      if (category == null) {
+         this.hasCategory = false;
+      }
+      else {
+         this.hasCategory = true;
+      }
+      
+   }
+   
+   public String toString() {
+      String out = name + " - Assigned " + 
+            dateAssigned.get(Calendar.DAY_OF_MONTH) + " " + dateAssigned.get(Calendar.MONTH) +
+            " - Due " + dateDue.get(Calendar.DAY_OF_MONTH) + " " + dateAssigned.get(Calendar.MONTH);
+      if (hasCategory) {
+         out += " - " + category;
+      }
+      return out;
    }
 
    /* Accessors */
@@ -66,6 +77,12 @@ public class Assignment {
    }
    public boolean hasComment() {
       return hasComment;
+   }
+   public String getCategory() {
+      return category;
+   }
+   public boolean hasCategory() {
+      return hasCategory;
    }
    
 }
