@@ -16,7 +16,7 @@ public class Test {
       @SuppressWarnings("resource")
       Scanner scan = new Scanner(System.in);
       
-      System.out.println("Focus API v0.3.2 alpha test-only version");
+      System.out.println("Focus API v0.3.3 alpha test-only version");
       System.out.println("Do not redistribute without express permission\n");
       
       Focus focus = null;
