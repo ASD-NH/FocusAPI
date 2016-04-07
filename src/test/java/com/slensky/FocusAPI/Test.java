@@ -8,6 +8,7 @@ import java.util.Scanner;
 import javax.security.auth.login.FailedLoginException;
 
 import com.slensky.FocusAPI.studentinfo.Course;
+import com.slensky.FocusAPI.util.Util;
 
 public class Test {
 
@@ -16,7 +17,7 @@ public class Test {
       @SuppressWarnings("resource")
       Scanner scan = new Scanner(System.in);
       
-      System.out.println("Focus API v0.3.4 alpha test-only version");
+      System.out.println("Focus API v0.4.0 alpha test-only version");
       System.out.println("Do not redistribute without express permission\n");
       
       Focus focus = null;
@@ -36,7 +37,7 @@ public class Test {
          }
       }
       
-      System.out.println("Portal Info:\n\n");
+      /*System.out.println("Portal Info:\n\n");
       try {
          System.out.println(focus.getStudentInfo().getPortalInfo(focus.getStudentInfo().getCurrentMarkingPeriod()));
       } catch (Exception e) {
@@ -51,7 +52,7 @@ public class Test {
          }
       } catch (Exception e) {
          e.printStackTrace();
-      }
+      }*/
       
    }
    

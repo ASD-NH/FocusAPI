@@ -7,7 +7,8 @@ public class Grade {
       NOT_GRADED,
       PASS,
       FAIL,
-      EXCLUDED
+      EXCUSED,
+      ABSENT
    }
    
    private Double pointsReceived;
@@ -36,7 +37,11 @@ public class Grade {
             isPassFail = true;
          case FAIL:
             isPassFail = true;
-         case EXCLUDED:
+         case EXCUSED:
+            this.pointsMax = gradeData[0];
+            break;
+         case ABSENT:
+            this.pointsMax = gradeData[0];
             break;
       }
       
@@ -47,16 +52,18 @@ public class Grade {
    
    public String toString() {
       switch (gradeType) {
-         case EXCLUDED:
-            return "Excluded";
+         case EXCUSED:
+            return "Exc./" + getPointsMax();
          case PASS:
             return "Pass";
          case FAIL:
             return "Fail";
          case GRADED:
-            return Double.toString((getPointsReceived() / getPointsMax()) * 100) + "%";
+            return getPointsReceived() + "/" + getPointsMax() + " - " + Double.toString((getPointsReceived() / getPointsMax()) * 100) + "%";
          case NOT_GRADED:
             return "NG/" + getPointsMax();
+         case ABSENT:
+            return "ABS/" + getPointsMax();
       }
       //unreachable
       return null;

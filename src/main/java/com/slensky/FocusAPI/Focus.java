@@ -1,6 +1,7 @@
 package com.slensky.FocusAPI;
 
 import java.io.IOException;
+import java.util.List;
 
 import javax.security.auth.login.FailedLoginException;
 
@@ -12,6 +13,7 @@ import org.jsoup.nodes.Document;
 import com.slensky.FocusAPI.cookie.CurrentSession;
 import com.slensky.FocusAPI.cookie.PHPSessionId;
 import com.slensky.FocusAPI.cookie.SessionTimeout;
+import com.slensky.FocusAPI.studentinfo.Course;
 import com.slensky.FocusAPI.studentinfo.MarkingPeriod;
 import com.slensky.FocusAPI.util.Logger;
 import com.slensky.FocusAPI.util.URLRetriever;

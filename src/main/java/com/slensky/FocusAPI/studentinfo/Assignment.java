@@ -6,8 +6,8 @@ public class Assignment {
 
    private final String name;
    private final Grade grade;
-   private final Calendar dateAssigned;
-   private final Calendar dateDue;
+   private final Calendar assigned;
+   private final Calendar due;
    private final Calendar lastModified;
    private final String category;
    private final boolean hasCategory;
@@ -17,15 +17,15 @@ public class Assignment {
    public Assignment(String name,
          String comment,
          Grade grade,
-         Calendar dateAssigned,
-         Calendar dateDue,
+         Calendar assigned,
+         Calendar due,
          Calendar lastModified,
          String category) {
 
       this.name = name;
       this.grade = grade;
-      this.dateAssigned = dateAssigned;
-      this.dateDue = dateDue;
+      this.assigned = assigned;
+      this.due = due;
       this.lastModified = lastModified;
       
       this.comment = comment;
@@ -48,8 +48,8 @@ public class Assignment {
    
    public String toString() {
       String out = name + " - Assigned " + 
-            dateAssigned.get(Calendar.DAY_OF_MONTH) + " " + dateAssigned.get(Calendar.MONTH) +
-            " - Due " + dateDue.get(Calendar.DAY_OF_MONTH) + " " + dateAssigned.get(Calendar.MONTH);
+            (assigned.get(Calendar.MONTH) + 1) + "/" + assigned.get(Calendar.DAY_OF_MONTH) +
+            " - Due " + (assigned.get(Calendar.MONTH) + 1) + "/" + due.get(Calendar.DAY_OF_MONTH);
       if (hasCategory) {
          out += " - " + category;
       }
@@ -64,10 +64,10 @@ public class Assignment {
       return grade;
    }
    public Calendar getDateAssigned() {
-      return dateAssigned;
+      return assigned;
    }
    public Calendar getDateDue() {
-      return dateDue;
+      return due;
    }
    public Calendar getLastModified() {
       return lastModified;

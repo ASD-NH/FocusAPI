@@ -6,22 +6,28 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.DayOfWeek;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import javax.swing.text.html.HTML.Tag;
+
+import org.apache.commons.lang3.StringEscapeUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
+import com.slensky.FocusAPI.studentinfo.Assignment;
 import com.slensky.FocusAPI.studentinfo.Course;
 import com.slensky.FocusAPI.studentinfo.CourseAssignments;
 import com.slensky.FocusAPI.studentinfo.FinalExam;
 import com.slensky.FocusAPI.studentinfo.FinalGrade;
+import com.slensky.FocusAPI.studentinfo.Grade;
 import com.slensky.FocusAPI.studentinfo.MarkingPeriod;
 import com.slensky.FocusAPI.studentinfo.MarkingPeriod.Term;
 import com.slensky.FocusAPI.studentinfo.PortalInfo;
@@ -39,7 +45,6 @@ public class StudentInfo {
    private MarkingPeriod currentMarkingPeriod;
    
    private List<MarkingPeriod> markingPeriods = new ArrayList<MarkingPeriod>();
-   private Map<MarkingPeriod, PortalInfo> portalInfo = new HashMap<MarkingPeriod, PortalInfo>();
    
    public StudentInfo(Focus focus) {
       this.focus = focus;
@@ -109,88 +114,71 @@ public class StudentInfo {
    }
    
    public PortalInfo getPortalInfo(MarkingPeriod mp) throws SessionExpiredException, IOException {
-      if (!portalInfo.containsKey(mp)) {
-         
-         Document portal = focus.getDownloader().getPortal().get(mp);
-         Elements courseLinks = portal.getElementsByAttributeValueStarting("href", "Modules.php?modname=Grades/StudentGBGrades.php?course_period_id=");
-         
-         Elements courseNames = new Elements();
-         Elements courseGrades = new Elements();
-         
-         for (Element e : courseLinks) {
-            //weed out duplicate elements (multiple mentions of courses etc.
-            if (!(e.html().indexOf("›") >= 0 || e.html().indexOf("<b>") >= 0)) {
-               //sort by if the elements by name/grade
-               if (e.html().indexOf('%') >= 0) {
-                  courseGrades.add(e);
-               }
-               else {
-                  courseNames.add(e);
-               }
+      Document portal = focus.getDownloader().getPortal().get(mp);
+      Elements courseLinks = portal.getElementsByAttributeValueStarting("href", "Modules.php?modname=Grades/StudentGBGrades.php?course_period_id=");
+      
+      Elements courseNames = new Elements();
+      Elements courseGrades = new Elements();
+      
+      for (Element e : courseLinks) {
+         //weed out duplicate elements (multiple mentions of courses etc.
+         if (!(e.html().indexOf("›") >= 0 || e.html().indexOf("<b>") >= 0)) {
+            //sort by if the elements by name/grade
+            if (e.html().indexOf('%') >= 0) {
+               courseGrades.add(e);
+            }
+            else {
+               courseNames.add(e);
             }
          }
-         assert(courseNames.size() == courseGrades.size());
+      }
+      assert(courseNames.size() == courseGrades.size());
+      
+      List<Course> courses = new ArrayList<Course>();
+      List<Integer> grades = new ArrayList<Integer>();
+      
+      for (Element e : courseNames) {
+         String t = e.text();
          
-         List<Course> courses = new ArrayList<Course>();
-         List<Integer> grades = new ArrayList<Integer>();
+         String name, teacher;
+         int period;
+         List<DayOfWeek> meetingDays;
          
-         for (Element e : courseNames) {
-            String t = e.text();
-            
-            String name, teacher;
-            int period;
-            List<DayOfWeek> meetingDays;
-            
-            String[] courseInfo = t.split(" - ");
-            name = courseInfo[0];
-            teacher = courseInfo[4];
-            
-            String periodStr = courseInfo[1].substring(courseInfo[1].length() - 1, courseInfo[1].length());
-            period = Integer.parseInt(periodStr);
-            
-            meetingDays = Util.parseMeetingDays(courseInfo[2]);
-            
-            courses.add(new Course(period, name, teacher, meetingDays, null, new MarkingPeriod(mp.getYear(), null, mp.getMarkingPeriodId())));
-            
-         }
-         for (Element e : courseGrades) {
-            String t = e.text();
-            t = t.substring(0, t.indexOf('%'));
-            grades.add(Integer.parseInt(t));
-         }
+         String[] courseInfo = t.split(" - ");
+         name = courseInfo[0];
+         teacher = courseInfo[4];
          
-         List<SchoolEvent> upcomingEvents = new ArrayList<SchoolEvent>();
-         Elements events = portal.getElementsByAttributeValueStarting("onclick", "switchMenu(\"calendar");
+         String periodStr = courseInfo[1].substring(courseInfo[1].length() - 1, courseInfo[1].length());
+         period = Integer.parseInt(periodStr);
          
-         for (Element e : events) {
-            String t = e.text();
-            
-            String date = t.substring(0, t.indexOf(": "));
-            Calendar eventDate = Calendar.getInstance();
-            SimpleDateFormat dateFormat = new SimpleDateFormat("MMM d, yyyy", Locale.US);
-            try {
-               eventDate.setTime(dateFormat.parse(date));
-            } catch (ParseException e1) {
-               date = t.substring(4, t.length());
-               dateFormat = new SimpleDateFormat("MMMM d'th', yyyy", Locale.US);
-               try {
-                  eventDate.setTime(dateFormat.parse(date));
-               } catch (ParseException e2) {
-                  // unreachable unless Focus changes date format again
-                  e2.printStackTrace();
-               }
-            }
-            
-            String name = t.substring(t.indexOf(": ") + 2, t.length());
-            
-            upcomingEvents.add(new SchoolEvent(eventDate, name));
-            
-         }
+         meetingDays = Util.parseMeetingDays(courseInfo[2]);
          
-         portalInfo.put(mp, new PortalInfo(courses, grades, upcomingEvents, mp));
+         courses.add(new Course(period, name, teacher, meetingDays, null, new MarkingPeriod(mp.getYear(), null, mp.getMarkingPeriodId())));
          
       }
-      return portalInfo.get(mp);
+      for (Element e : courseGrades) {
+         String t = e.text();
+         t = t.substring(0, t.indexOf('%'));
+         grades.add(Integer.parseInt(t));
+      }
+      
+      List<SchoolEvent> upcomingEvents = new ArrayList<SchoolEvent>();
+      Elements events = portal.getElementsByAttributeValueStarting("onclick", "switchMenu(\"calendar");
+      
+      for (Element e : events) {
+         String t = e.text();
+         
+         String date = t.substring(0, t.indexOf(": "));
+         Calendar eventDate = Util.parseDate(date);
+         
+         String name = t.substring(t.indexOf(": ") + 2, t.length());
+         
+         upcomingEvents.add(new SchoolEvent(eventDate, name));
+         
+      }
+      
+      return new PortalInfo(courses, grades, upcomingEvents, mp);
+      
    }
    
    public List<Course> getCoursesFromPortalInfo(MarkingPeriod mp) throws SessionExpiredException, IOException {
@@ -207,8 +195,7 @@ public class StudentInfo {
             
             Logger.log("Retrieved schedule URL: " + scheduleURL);
          }
-         Element csvLinkElement = downloader.getSchedule().get(mp).getElementById("lo_controls").getElementsByTag("a").get(0);
-         String csvLink = URLRetriever.getTLD() + csvLinkElement.attr("href");
+         String csvLink = getCSVLink(downloader.getSchedule().get(mp));
          downloader.setScheduleCSV(new FocusCSV(downloader, csvLink));
       }
       
@@ -257,10 +244,157 @@ public class StudentInfo {
       return courses;
    }
    
-   public Map<Course, CourseAssignments> getCourseAssignments(MarkingPeriod mp) {return null;}
+   public CourseAssignments getCourseAssignments(Course course, MarkingPeriod mp) throws SessionExpiredException, IOException {
+      
+      Document portal = downloader.getPortal().get(mp);
+      String courseLink = null;
+      for (Element e : portal.getElementsByAttributeValueStarting("href", "Modules.php?modname=Grades/StudentGBGrades.php?course_period_id=")) {
+         if (e.text().indexOf(course.getName()) >= 0) {
+            courseLink = URLRetriever.getTLD() + e.attr("href");
+            break;
+         }
+      }
+      assert courseLink != null : "Link for the selected course could not be found!";
+      Logger.log("Link to " + course.getName() + " extracted: " + courseLink);
+      
+      Document coursePage = downloader.getDocument(mp, courseLink);
+      
+      Map<String, Double> categories = null;
+      
+      //has categories probably
+      if (coursePage.text().contains("Percent of Grade") &&
+            coursePage.text().contains("Your Score") &&
+            coursePage.text().contains("Weighted Grade")) {
+         Element categoryTable = coursePage.getElementById("Page_Content").getElementsByTag("table").get(1)
+               .getElementsByTag("tbody").get(1);
+         
+         Elements categoryNameElements = categoryTable.getElementsByTag("tr").get(0).getElementsByTag("td");
+         Elements categoryWeightElements = categoryTable.getElementsByTag("tr").get(1).getElementsByTag("td");
+         
+         categories = new HashMap<String, Double>();
+         
+         List<String> categoryNames = new ArrayList<String>();
+         for (Element e : categoryNameElements) {
+            if (e.html().contains("&nbsp;")) {
+               break;
+            }
+            categoryNames.add(e.text());
+         }
+         List<Double> categoryWeights = new ArrayList<Double>();
+         for (Element e : categoryWeightElements) {
+            if (e.html().contains("&nbsp;")) {
+               break;
+            }
+            String numOnly = e.text().substring(0, e.text().length() - 1);
+            categoryWeights.add(Double.parseDouble(numOnly) / 100);
+         }
+         
+         assert categoryNames.size() == categoryWeights.size() : "Mismatch between number of weights and number of names";
+         
+         for (int i = 0; i < categoryNames.size(); i++) {
+            categories.put(categoryNames.get(i), categoryWeights.get(i));
+         }
+         Logger.log(categories.toString());
+      }
+      else {
+         Logger.log("No categories found for course");
+      }
+      
+      List<Assignment> assignments = new ArrayList<Assignment>();
+      Elements assignmentsDOM = coursePage.getElementsByAttributeValueStarting("id", "LOy_row");
+      for (Element e : assignmentsDOM) {
+         Elements fields = e.getElementsByClass("LO_field");
+         
+         String name = fields.get(0).text();
+         
+         String desc = "";
+         if (fields.get(0).children().size() > 0) {
+            desc = fields.get(0).child(0).attr("onmouseover");
+            desc = desc.substring(desc.indexOf("\",\"") + 3, desc.indexOf("\"]"));
+            desc = StringEscapeUtils.unescapeJava(desc);
+         }
+         
+         Element gradeDOM = fields.get(1);
+         Grade.Type gradeType;
+         double[] gradeData = new double[2];
+         //is a pass or fail grade
+         if (gradeDOM.children().size() > 0) {
+            String src = gradeDOM.child(0).attr("src");
+            if (src.contains("check")) {
+               gradeType = Grade.Type.PASS;
+            }
+            else {
+               gradeType = Grade.Type.FAIL;
+            }
+         }
+         else {
+            String[] gradePair = gradeDOM.text().toLowerCase().split(" / ");
+            assert gradePair.length == 2 : "Couldn't identify grade pair";
+            //absent
+            if (gradePair[0].contains("ab")) {
+               gradeType = Grade.Type.ABSENT;
+               gradeData[0] = Double.parseDouble(gradePair[1]);
+            }
+            //excused
+            else if (gradePair[0].contains("*")) {
+               gradeType = Grade.Type.EXCUSED;
+               gradeData[0] = Double.parseDouble(gradePair[1]);
+            }
+            //not graded
+            else if (gradePair[0].contains("ng")) {
+               gradeType = Grade.Type.NOT_GRADED;
+               gradeData[0] = Double.parseDouble(gradePair[1]);
+            }
+            //graded
+            else {
+               gradeType = Grade.Type.GRADED;
+               gradeData = new double[2];
+               gradeData[0] = Double.parseDouble(gradePair[0]);
+               gradeData[1] = Double.parseDouble(gradePair[1]);
+            }
+         }
+         
+         Grade grade = new Grade(gradeType, gradeData);
+         
+         Calendar assigned = Util.parseDate(fields.get(4).text());
+         Calendar due = Util.parseDate(fields.get(5).text());
+         
+         Calendar lastModified;
+         String category = null;
+         if (categories == null) {
+            lastModified = Util.parseDate(fields.get(8).text());
+         }
+         else {
+            category = fields.get(6).text();
+            
+            String lastModifiedStr = fields.get(9).text();
+            if (lastModifiedStr.isEmpty()) {
+               lastModified = null;
+            }
+            else {
+               lastModified = Util.parseDate(lastModifiedStr);
+            }
+         }
+         
+         assignments.add(new Assignment(name, desc, grade, assigned, due, lastModified, category));
+         
+      }
+      
+      CourseAssignments courseAssignments = new CourseAssignments(assignments, categories);
+      return courseAssignments;
+      
+   }
+   
    public List<FinalGrade> getFinalGrades() {return null;}
    public List<FinalExam> getFinalExams() {return null;}
    public List<SchoolEvent> getEventsFromCalendar(int yearStart, int yearEnd) {return null;}
    public StudentAccountInfo getStudentInformation(MarkingPeriod mp) {return null;}
+   
+   private String getCSVLink(Document document) {
+      Element csvLinkElement = document.getElementById("lo_controls").getElementsByTag("a").get(0);
+      String csvLink = URLRetriever.getTLD() + csvLinkElement.attr("href");
+      Logger.log("CSV extracted: " + csvLink);
+      return csvLink;
+   }
    
 }
