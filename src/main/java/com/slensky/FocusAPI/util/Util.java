@@ -164,6 +164,7 @@ public class Util {
       /* get year */
       
       date = date.substring(date.indexOf(' ') + 1);
+      date = date.replace(",", "");
       if (date.contains(" ")) {
          year = Integer.parseInt(date.substring(0, date.indexOf(' ')));
       }
