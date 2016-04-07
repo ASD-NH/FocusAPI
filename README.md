@@ -2,7 +2,18 @@
 
 Java API for accessing course/grade information via Focus for Schools. Currently in very early development. Contact me at [stephan.lensky@gmail.com](mailto:stephan.lensky@gmail.com) if you have any questions.
 
-Note that currently the password masking used when logging in with test mode is incompatible with Eclipse, so if you want to use it, either export as a `.jar` and run from the commandline, or comment out the password input line in `src/test/java/com/slensky/FocusAPI/test.java` and hardcode in your password.
+Using this API is dead simple. Here's an example:
+```
+// initializes the focus object and logs in
+Focus focus = new Focus(user, password, Focus.School.ASD);
+
+// stores the current marking period (a marking period is a combination of a semester and a year)
+MarkingPeriod mp = focus.getStudentInfo.getCurrentMarkingPeriod();
+
+//prints out the user's courses for the current marking period
+System.out.println(focus.getStudentInfo().getCoursesFromSchedule(mp));
+
+```
 
 ## Currently Working
 
