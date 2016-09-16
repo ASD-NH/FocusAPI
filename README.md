@@ -1,4 +1,4 @@
-Notice: development on this project has stopped, and it's entirely likely that it will stop working at some point. The codebase is messy and I intend to start over entirely.
+Notice: development on this project has stopped, and it's entirely likely that it will stop working at some point. The codebase is messy and I intend to start over from scratch. This is still a useful proof of concept for the idea, though.
 
 # FocusAPI
 
