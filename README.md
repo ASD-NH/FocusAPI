@@ -1,3 +1,5 @@
+Notice: development on this project has stopped, and it's entirely likely that it will stop working at some point. The codebase is messy and I intend to start over entirely.
+
 # FocusAPI
 
 Java API for accessing course/grade information via Focus for Schools. Currently in very early development. Contact me at [stephan.lensky@gmail.com](mailto:stephan.lensky@gmail.com) if you have any questions.
