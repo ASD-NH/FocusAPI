@@ -4,7 +4,7 @@ Notice: development on this project has stopped, and it's entirely likely that i
 
 Java API for accessing course/grade information via Focus for Schools. Currently in very early development. Contact me at [stephan.lensky@gmail.com](mailto:stephan.lensky@gmail.com) if you have any questions.
 
-Using this API is dead simple. Here's an example:
+Getting started with this API is simple. Here's an example:
 ```
 // initializes the focus object and logs in
 Focus focus = new Focus(user, password, Focus.School.ASD);
